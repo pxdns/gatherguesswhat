@@ -32,12 +32,19 @@ jobs:
         run: npm run build:web
         env:
           NEXTAUTH_SECRET: ci-test-secret-do-not-use-in-production
+          # Only needs to be a syntactically valid Postgres URL — prisma generate
+          # doesn't connect to it, and db push is skipped outside Vercel (VERCEL
+          # env var unset here). See apps/web/scripts/build.sh.
+          DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
 
       - name: Build marketing
         run: npm run build:marketing
 
   validate-desktop-build:
-    runs-on: ubuntu-latest
+    # Tauri v1 links against webkit2gtk-4.0, which Ubuntu 24.04 ("noble", what
+    # ubuntu-latest now points to) no longer ships. Pin to 22.04 until the app
+    # migrates to Tauri v2.
+    runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v4

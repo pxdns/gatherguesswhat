@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "bash scripts/build.sh",
     "start": "next start",
     "lint": "next lint"
   },
@@ -29,6 +29,7 @@
     "@types/react-dom": "^18.2.18",
     "typescript": "^5.3.3",
     "eslint": "^8.56.0",
-    "eslint-config-next": "^14.0.4"
+    "eslint-config-next": "^14.0.4",
+    "prisma": "^5.7.1"
   }
 }
