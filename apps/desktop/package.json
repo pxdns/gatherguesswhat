@@ -1,0 +1,32 @@
+{
+  "name": "@nexa/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "build:debug": "tauri build --debug",
+    "build:win": "tauri build --target x86_64-pc-windows-msvc",
+    "build:linux": "tauri build --target x86_64-unknown-linux-gnu",
+    "build:macos": "tauri build --target x86_64-apple-darwin",
+    "build:macos-arm": "tauri build --target aarch64-apple-darwin"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^1.5.3",
+    "@nexa/branding": "*",
+    "@nexa/theme": "*",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "zustand": "^4.4.6",
+    "tailwindcss": "^3.4.1"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^1.5.9",
+    "@types/node": "^20.10.6",
+    "@types/react": "^18.2.46",
+    "@types/react-dom": "^18.2.18",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.8"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "productName": "Nexa",
+  "version": "0.1.0",
+  "identifier": "com.nexa.app",
+  "build": {
+    "beforeDevCommand": "npm run dev --prefix ../../",
+    "beforeBuildCommand": "npm run build --prefix ../../",
+    "devPath": "http://localhost:3000",
+    "frontendDist": "../../apps/web/.next"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Nexa",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["deb", "dmg", "msi", "appimage"],
+    "identifier": "com.nexa.app",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}

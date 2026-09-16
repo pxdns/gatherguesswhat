@@ -1,0 +1,30 @@
+{
+  "name": "nexa",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Where communities come together",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "cd apps/web && npm run dev",
+    "dev:desktop": "cd apps/desktop && npm run tauri dev",
+    "dev:marketing": "cd apps/marketing && npm run dev",
+    "build:web": "cd apps/web && npm run build",
+    "build:desktop": "cd apps/desktop && npm run tauri build",
+    "build:marketing": "cd apps/marketing && npm run build",
+    "build:all": "npm run build:web && npm run build:marketing && npm run build:desktop",
+    "db:push": "cd packages/database && npx prisma db push",
+    "db:migrate": "cd packages/database && npx prisma migrate dev",
+    "db:studio": "cd packages/database && npx prisma studio",
+    "lint": "eslint . --ext .ts,.tsx",
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.20.0",
+    "@typescript-eslint/parser": "^6.20.0",
+    "eslint": "^8.56.0",
+    "typescript": "^5.3.3"
+  }
+}

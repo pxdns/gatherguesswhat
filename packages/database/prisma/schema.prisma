@@ -1,0 +1,234 @@
+// This is your Prisma schema file
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  email     String   @unique
+  avatar    String?
+  bio       String?
+  status    String   @default("online")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts          Account[]
+  communities       CommunityMember[]
+  messages          Message[]
+  reactions         Reaction[]
+  reports           Report[]
+  moderationActions ModerationAction[]
+  blocked           User[]            @relation("blocked")
+  blockedBy         User[]            @relation("blocked")
+  settings          UserSettings?
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Community {
+  id          String   @id @default(cuid())
+  name        String
+  icon        String?
+  description String?
+  banner      String?
+  isPublic    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members CommunityMember[]
+  channels Channel[]
+  roles   Role[]
+  invites Invite[]
+  bans    Ban[]
+  auditLog AuditLog[]
+}
+
+model CommunityMember {
+  id          String   @id @default(cuid())
+  userId      String
+  communityId String
+  joinedAt    DateTime @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  roles     Role[]
+
+  @@unique([userId, communityId])
+}
+
+model Role {
+  id          String @id @default(cuid())
+  name        String
+  color       String @default("#0066ff")
+  communityId String
+
+  community Community        @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  members   CommunityMember[]
+  permissions Permission[]
+}
+
+model Permission {
+  id     String @id @default(cuid())
+  roleId String
+  name   String
+
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+}
+
+model Channel {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   @default("text")
+  description String?
+  topic       String?
+  communityId String
+  isPrivate   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  messages  Message[]
+
+  @@index([communityId])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  userId    String
+  channelId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel   Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  reactions Reaction[]
+  attachments Attachment[]
+
+  @@index([channelId])
+  @@index([userId])
+}
+
+model Reaction {
+  id        String   @id @default(cuid())
+  emoji     String
+  userId    String
+  messageId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, messageId, emoji])
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  url       String
+  filename  String
+  size      Int
+  type      String
+  messageId String
+  createdAt DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+}
+
+model Report {
+  id          String   @id @default(cuid())
+  reporterId  String
+  reason      String
+  description String?
+  status      String   @default("open")
+  messageId   String?
+  userId      String?
+  communityId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  reporter User @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+}
+
+model ModerationAction {
+  id          String   @id @default(cuid())
+  moderatorId String
+  userId      String
+  communityId String
+  action      String
+  reason      String?
+  duration    Int?
+  createdAt   DateTime @default(now())
+
+  moderator User @relation(fields: [moderatorId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([communityId])
+}
+
+model Ban {
+  id          String   @id @default(cuid())
+  userId      String
+  communityId String
+  reason      String?
+  createdAt   DateTime @default(now())
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, communityId])
+}
+
+model Invite {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  communityId String
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime?
+  maxUses     Int?
+  uses        Int      @default(0)
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  communityId String
+  action      String
+  details     String?
+  createdAt   DateTime @default(now())
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+}
+
+model UserSettings {
+  id              String  @id @default(cuid())
+  userId          String  @unique
+  theme           String  @default("dark")
+  notifications   Boolean @default(true)
+  soundEnabled    Boolean @default(true)
+  compactMode     Boolean @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@layer components {
+  .glass-thin {
+    @apply backdrop-blur-[10px] bg-white/80 dark:bg-slate-950/75 border border-white/20 dark:border-slate-800/20;
+  }
+
+  .glass-regular {
+    @apply backdrop-blur-[20px] bg-white/75 dark:bg-slate-950/70 border border-white/15 dark:border-slate-800/15;
+  }
+
+  .glass-thick {
+    @apply backdrop-blur-[30px] bg-white/60 dark:bg-slate-950/60 border border-white/10 dark:border-slate-800/10;
+  }
+}
