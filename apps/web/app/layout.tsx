@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { brand } from "@nexa/branding";
+import { Providers } from "./providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -24,7 +25,7 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" />
       </head>
       <body className="bg-white dark:bg-slate-950 text-slate-950 dark:text-white">
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(git commit *)",
+      "Bash(git commit -m 'feat: configure NextAuth with Google & GitHub OAuth + add signin & dashboard pages *)"
     ]
   }
 }
