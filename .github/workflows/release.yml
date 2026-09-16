@@ -34,25 +34,18 @@ jobs:
           DIRECT_URL: "postgresql://ci:ci@localhost:5432/ci"
           NEXTAUTH_SECRET: "ci-build-secret-do-not-use-in-production"
 
+      # Unsigned builds for now — no Apple Developer certificate configured. Once one
+      # exists, add APPLE_CERTIFICATE/APPLE_CERTIFICATE_PASSWORD/APPLE_SIGNING_IDENTITY/
+      # APPLE_ID/APPLE_PASSWORD/APPLE_TEAM_ID as repo secrets and restore them as env
+      # vars on these two steps. Passing them through as empty strings (as GitHub
+      # Actions does for secrets that don't exist) is worse than not setting them at
+      # all — it makes tauri-bundler try and fail to import an empty certificate
+      # instead of skipping signing.
       - name: Build macOS (Intel)
         run: npm run build:macos
-        env:
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
       - name: Build macOS (Apple Silicon)
         run: npm run build:macos-arm
-        env:
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
       - name: Upload macOS Intel
         uses: softprops/action-gh-release@v1
