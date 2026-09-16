@@ -5,7 +5,8 @@
       "Bash(git commit -m ' *)",
       "Bash(git push *)",
       "Bash(git commit *)",
-      "Bash(git commit -m 'feat: configure NextAuth with Google & GitHub OAuth + add signin & dashboard pages *)"
+      "Bash(git commit -m 'feat: configure NextAuth with Google & GitHub OAuth + add signin & dashboard pages *)",
+      "Bash(git commit -m 'ci: add GitHub Actions workflows for CI/CD *)"
     ]
   }
 }
