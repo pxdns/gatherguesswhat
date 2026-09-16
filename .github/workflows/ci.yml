@@ -36,6 +36,7 @@ jobs:
           # doesn't connect to it, and db push is skipped outside Vercel (VERCEL
           # env var unset here). See apps/web/scripts/build.sh.
           DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
+          DIRECT_URL: "postgresql://ci:ci@localhost:5432/ci"
 
       - name: Build marketing
         run: npm run build:marketing

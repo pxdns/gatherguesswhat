@@ -5,7 +5,14 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // Transaction-mode pooling (Supabase's pooler, port 6543) is what the app should
+  // use at runtime, but it hands out a different backend connection per statement,
+  // which breaks the session-level advisory lock Prisma takes during db push/migrate
+  // — that's why those commands hang instead of failing. directUrl gives migrations
+  // their own connection (Supabase's Session pooler, port 5432) that keeps state for
+  // the whole session.
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // User/Account/Session/VerificationToken fields and shapes follow the contract

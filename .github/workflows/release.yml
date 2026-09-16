@@ -31,6 +31,7 @@ jobs:
         run: npm run build:web
         env:
           DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
+          DIRECT_URL: "postgresql://ci:ci@localhost:5432/ci"
           NEXTAUTH_SECRET: "ci-build-secret-do-not-use-in-production"
 
       - name: Build macOS (Intel)
@@ -92,6 +93,7 @@ jobs:
         run: npm run build:web
         env:
           DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
+          DIRECT_URL: "postgresql://ci:ci@localhost:5432/ci"
           NEXTAUTH_SECRET: "ci-build-secret-do-not-use-in-production"
 
       - name: Build Windows
@@ -137,6 +139,7 @@ jobs:
         run: npm run build:web
         env:
           DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
+          DIRECT_URL: "postgresql://ci:ci@localhost:5432/ci"
           NEXTAUTH_SECRET: "ci-build-secret-do-not-use-in-production"
 
       - name: Build Linux
