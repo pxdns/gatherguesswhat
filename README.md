@@ -254,7 +254,7 @@ rm -rf apps/desktop/src-tauri/target
 
 - Issues: GitHub Issues
 - Docs: `/docs` (when available)
-- Email: support@nexachat.com
+- Email: xpknown@gmail.com
 
 ## 📄 License
 

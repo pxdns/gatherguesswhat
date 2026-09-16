@@ -100,7 +100,7 @@ export default function SettingsPage() {
             </label>
             <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
               Controls how much language is filtered in messages you send. Applied
-              server-side so it can't be bypassed from the client.
+              server-side so it can&rsquo;t be bypassed from the client.
             </p>
             <select
               value={settings.profanityFilterLevel}

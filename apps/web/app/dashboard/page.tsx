@@ -1,23 +1,35 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 
+interface Community {
+  id: string;
+  name: string;
+  icon: string | null;
+  memberCount: number;
+  isMember: boolean;
+}
+
 export default function Dashboard() {
   const { data: session } = useSession();
+  const [stats, setStats] = useState<{ communityCount: number; messageCount: number } | null>(
+    null
+  );
+  const [myCommunities, setMyCommunities] = useState<Community[]>([]);
 
-  const stats = [
-    { label: "Communities", value: "3", icon: "🏘️" },
-    { label: "Active Chats", value: "8", icon: "💬" },
-    { label: "Friends", value: "24", icon: "👥" },
-    { label: "Messages", value: "342", icon: "📧" },
-  ];
+  useEffect(() => {
+    fetch("/api/stats")
+      .then((r) => r.json())
+      .then(setStats)
+      .catch(() => {});
 
-  const recentCommunities = [
-    { name: "Developers", members: 245, icon: "👨‍💻" },
-    { name: "Gaming", members: 1203, icon: "🎮" },
-    { name: "Design", members: 342, icon: "🎨" },
-  ];
+    fetch("/api/communities")
+      .then((r) => r.json())
+      .then((all: Community[]) => setMyCommunities(all.filter((c) => c.isMember).slice(0, 3)))
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="p-8">
@@ -27,24 +39,22 @@ export default function Dashboard() {
           Welcome back, {session?.user?.name}! 👋
         </h1>
         <p className="text-slate-600 dark:text-slate-400">
-          Here's what's happening in your communities today
+          Here&rsquo;s what&rsquo;s happening in your communities today
         </p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid md:grid-cols-4 gap-4 mb-8">
-        {stats.map((stat) => (
-          <div
-            key={stat.label}
-            className="bg-white dark:bg-slate-900 rounded-lg shadow p-6"
-          >
-            <div className="text-3xl mb-2">{stat.icon}</div>
-            <p className="text-3xl font-bold mb-1">{stat.value}</p>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              {stat.label}
-            </p>
-          </div>
-        ))}
+      <div className="grid md:grid-cols-2 gap-4 mb-8">
+        <div className="bg-white dark:bg-slate-900 rounded-lg shadow p-6">
+          <div className="text-3xl mb-2">🏘️</div>
+          <p className="text-3xl font-bold mb-1">{stats?.communityCount ?? "—"}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">Communities</p>
+        </div>
+        <div className="bg-white dark:bg-slate-900 rounded-lg shadow p-6">
+          <div className="text-3xl mb-2">📧</div>
+          <p className="text-3xl font-bold mb-1">{stats?.messageCount ?? "—"}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">Messages sent</p>
+        </div>
       </div>
 
       {/* Quick Actions */}
@@ -60,27 +70,33 @@ export default function Dashboard() {
               View all →
             </Link>
           </div>
-          <div className="space-y-3">
-            {recentCommunities.map((community) => (
-              <div
-                key={community.name}
-                className="flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">{community.icon}</span>
-                  <div>
-                    <p className="font-semibold">{community.name}</p>
-                    <p className="text-xs text-slate-500">
-                      {community.members} members
-                    </p>
+          {myCommunities.length === 0 ? (
+            <p className="text-sm text-slate-500">
+              You haven&rsquo;t joined any communities yet.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {myCommunities.map((community) => (
+                <Link
+                  key={community.id}
+                  href={`/messages?communityId=${community.id}`}
+                  className="flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{community.icon || "🌐"}</span>
+                    <div>
+                      <p className="font-semibold">{community.name}</p>
+                      <p className="text-xs text-slate-500">
+                        {community.memberCount} member
+                        {community.memberCount === 1 ? "" : "s"}
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <button className="text-slate-400 hover:text-slate-600">
-                  →
-                </button>
-              </div>
-            ))}
-          </div>
+                  <span className="text-slate-400">→</span>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Quick Links */}

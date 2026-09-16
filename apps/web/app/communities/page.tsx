@@ -1,58 +1,77 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 
 interface Community {
   id: string;
   name: string;
-  description: string;
-  members: number;
-  icon: string;
+  description: string | null;
+  icon: string | null;
+  memberCount: number;
+  isMember: boolean;
 }
 
-const mockCommunities: Community[] = [
-  {
-    id: "1",
-    name: "Developers",
-    description: "Community for developers",
-    members: 245,
-    icon: "👨‍💻",
-  },
-  {
-    id: "2",
-    name: "Gaming",
-    description: "Gaming community",
-    members: 1203,
-    icon: "🎮",
-  },
-  {
-    id: "3",
-    name: "Design",
-    description: "Design enthusiasts",
-    members: 342,
-    icon: "🎨",
-  },
-];
-
 export default function CommunitiesPage() {
-  const [communities, setCommunities] = useState<Community[]>(mockCommunities);
+  const [communities, setCommunities] = useState<Community[] | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [newCommunity, setNewCommunity] = useState({ name: "", description: "" });
+  const [creating, setCreating] = useState(false);
+  const [joiningId, setJoiningId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleCreate = () => {
-    if (newCommunity.name.trim()) {
-      const community: Community = {
-        id: Date.now().toString(),
-        name: newCommunity.name,
-        description: newCommunity.description,
-        members: 1,
-        icon: "🌐",
-      };
-      setCommunities([...communities, community]);
+  function load() {
+    fetch("/api/communities")
+      .then((r) => r.json())
+      .then(setCommunities)
+      .catch(() => setError("Failed to load communities"));
+  }
+
+  useEffect(load, []);
+
+  async function handleCreate() {
+    if (!newCommunity.name.trim()) return;
+    setCreating(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/communities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newCommunity),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Failed to create community");
+        return;
+      }
+      setCommunities((prev) => (prev ? [data, ...prev] : [data]));
       setNewCommunity({ name: "", description: "" });
       setShowCreate(false);
+    } finally {
+      setCreating(false);
     }
-  };
+  }
+
+  async function handleJoin(id: string) {
+    setJoiningId(id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/communities/${id}/join`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Failed to join");
+        return;
+      }
+      setCommunities(
+        (prev) =>
+          prev?.map((c) =>
+            c.id === id ? { ...c, isMember: true, memberCount: c.memberCount + 1 } : c
+          ) || null
+      );
+    } finally {
+      setJoiningId(null);
+    }
+  }
 
   return (
     <div className="p-8">
@@ -70,6 +89,12 @@ export default function CommunitiesPage() {
           + Create
         </button>
       </div>
+
+      {error && (
+        <div className="mb-4 px-4 py-2 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 text-sm rounded-lg">
+          {error}
+        </div>
+      )}
 
       {/* Create Modal */}
       {showCreate && (
@@ -97,9 +122,10 @@ export default function CommunitiesPage() {
             <div className="flex gap-2">
               <button
                 onClick={handleCreate}
-                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition"
+                disabled={creating}
+                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition disabled:opacity-50"
               >
-                Create
+                {creating ? "Creating..." : "Create"}
               </button>
               <button
                 onClick={() => setShowCreate(false)}
@@ -113,28 +139,47 @@ export default function CommunitiesPage() {
       )}
 
       {/* Communities Grid */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {communities.map((community) => (
-          <div
-            key={community.id}
-            className="bg-white dark:bg-slate-900 rounded-lg shadow p-6 hover:shadow-lg transition cursor-pointer"
-          >
-            <div className="text-4xl mb-3">{community.icon}</div>
-            <h3 className="text-xl font-bold mb-2">{community.name}</h3>
-            <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">
-              {community.description}
-            </p>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-500">
-                👥 {community.members} members
-              </span>
-              <button className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold transition">
-                Join
-              </button>
+      {communities === null ? (
+        <p className="text-slate-500">Loading communities...</p>
+      ) : communities.length === 0 ? (
+        <p className="text-slate-500">No communities yet. Create the first one!</p>
+      ) : (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {communities.map((community) => (
+            <div
+              key={community.id}
+              className="bg-white dark:bg-slate-900 rounded-lg shadow p-6 hover:shadow-lg transition"
+            >
+              <div className="text-4xl mb-3">{community.icon || "🌐"}</div>
+              <h3 className="text-xl font-bold mb-2">{community.name}</h3>
+              <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">
+                {community.description || "No description yet"}
+              </p>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-500">
+                  👥 {community.memberCount} member{community.memberCount === 1 ? "" : "s"}
+                </span>
+                {community.isMember ? (
+                  <Link
+                    href={`/messages?communityId=${community.id}`}
+                    className="px-3 py-1 bg-slate-200 dark:bg-slate-800 rounded font-semibold hover:bg-slate-300 dark:hover:bg-slate-700 transition"
+                  >
+                    Open
+                  </Link>
+                ) : (
+                  <button
+                    onClick={() => handleJoin(community.id)}
+                    disabled={joiningId === community.id}
+                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold transition disabled:opacity-50"
+                  >
+                    {joiningId === community.id ? "..." : "Join"}
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
