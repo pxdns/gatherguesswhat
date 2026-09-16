@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npx prisma *)",
+      "Bash(git restore *)",
+      "Bash(export DATABASE_URL='postgresql://postgres:mE%23d%21BQ6SjaN_vs@db.diyxcovpedzweaazeehq.supabase.co:5432/postgres')",
+      "Bash(npx --yes prisma@5.7.1 db push --schema=./prisma/schema.prisma)",
+      "Bash(chmod +x /workspaces/gatherguesswhat/apps/web/scripts/build.sh)"
+    ]
+  }
+}
