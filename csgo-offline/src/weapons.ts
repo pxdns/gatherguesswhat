@@ -304,7 +304,7 @@ export class Weapon {
     return this.isReloading;
   }
 
-  public isScoped(): boolean {
+  public isScopedActive(): boolean {
     return this.isScoped && this.data.scope;
   }
 

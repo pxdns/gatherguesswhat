@@ -223,7 +223,7 @@ export class Player {
     }
 
     // Update camera FOV for scope
-    if (this.currentWeapon && this.currentWeapon.isScoped()) {
+    if (this.currentWeapon && this.currentWeapon.isScopedActive()) {
       this.camera.fov = 30;
     } else {
       this.camera.fov = 75;
