@@ -57,7 +57,7 @@ interface Channel {
   description: string | null;
   githubRepoName: string | null;
   githubRepoOwner: string | null;
-  ws: { id: string; name: string; slug: string };
+  workspace: { id: string; name: string; slug: string };
 }
 
 interface Props {

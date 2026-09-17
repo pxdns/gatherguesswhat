@@ -14,7 +14,7 @@ export default async function ChannelPage({
   const channel = await prisma.channel.findUnique({
     where: { id: params.channelId },
     include: {
-      ws: { select: { id: true, name: true, slug: true } },
+      workspace: { select: { id: true, name: true, slug: true } },
       members: { take: 50 },
       pins: {
         include: {
