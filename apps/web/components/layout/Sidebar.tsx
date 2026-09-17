@@ -10,6 +10,7 @@ interface Channel {
   name: string;
   type: string;
   isPrivate: boolean;
+  isDm: boolean;
   githubRepoName: string | null;
 }
 
