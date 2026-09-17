@@ -1,4 +1,4 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@r185/build/three.module.js';
+import * as THREE from 'three';
 import { Player } from './player';
 import { Bot } from './bot';
 import { WeaponSystem } from './weapons';
