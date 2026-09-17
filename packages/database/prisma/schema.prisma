@@ -1,24 +1,18 @@
-// This is your Prisma schema file
+// Vertex — Workplace Collaboration Platform
+// Schema covers: auth, workspaces, channels, messaging, tasks, roadmaps, GitHub integration, AI
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  // Transaction-mode pooling (Supabase's pooler, port 6543) is what the app should
-  // use at runtime, but it hands out a different backend connection per statement,
-  // which breaks the session-level advisory lock Prisma takes during db push/migrate
-  // — that's why those commands hang instead of failing. directUrl gives migrations
-  // their own connection (Supabase's Session pooler, port 5432) that keeps state for
-  // the whole session.
+  provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
-// User/Account/Session/VerificationToken fields and shapes follow the contract
-// required by @auth/prisma-adapter (https://authjs.dev/getting-started/adapters/prisma).
-// Deviating from these (e.g. renaming `image`, dropping Session) breaks OAuth sign-in
-// silently because the adapter can't create the rows it needs.
+// ─── Auth (NextAuth v5 / @auth/prisma-adapter contract) ─────────────────────
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -26,23 +20,31 @@ model User {
   emailVerified DateTime?
   image         String?
 
-  // Nexa-specific profile fields, separate from the adapter's required fields above.
-  username  String? @unique
-  bio       String?
-  status    String  @default("online")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  // GitHub identity
+  githubUsername String?
+  githubId       String? @unique
 
-  accounts          Account[]
-  sessions          Session[]
-  communities       CommunityMember[]
-  messages          Message[]
-  reactions         Reaction[]
-  reports           Report[]
-  moderationActions ModerationAction[]
-  blocked           User[]            @relation("blocked")
-  blockedBy         User[]            @relation("blocked")
-  settings          UserSettings?
+  // Profile
+  displayName   String?
+  bio           String?
+  title         String?
+  timezone      String?
+  status        String  @default("online")
+  statusMessage String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  accounts         Account[]
+  sessions         Session[]
+  workspaceMembers WorkspaceMember[]
+  messages         Message[]
+  taskAssignments  Task[]            @relation("TaskAssignee")
+  tasksCreated     Task[]            @relation("TaskCreator")
+  reactions        Reaction[]
+  mentions         Mention[]
+  notifications    Notification[]
+  aiConversations  AIConversation[]
+  settings         UserSettings?
 }
 
 model Account {
@@ -81,89 +83,147 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-model Community {
-  id          String   @id @default(cuid())
+// ─── Workspaces ─────────────────────────────────────────────────────────────
+
+model Workspace {
+  id          String  @id @default(cuid())
   name        String
+  slug        String  @unique
   icon        String?
   description String?
-  banner      String?
-  isPublic    Boolean  @default(true)
+  // GitHub org link (populated when workspace is created from a GitHub org)
+  githubOrgName String?
+  githubOrgId   String?
+  isPublic    Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  members CommunityMember[]
-  channels Channel[]
-  roles   Role[]
-  invites Invite[]
-  bans    Ban[]
-  auditLog AuditLog[]
+  members      WorkspaceMember[]
+  channels     Channel[]
+  taskBoards   TaskBoard[]
+  roadmaps     Roadmap[]
+  invites      WorkspaceInvite[]
+  integrations WorkspaceIntegration[]
+  plugins      WorkspacePlugin[]
+  auditLog     AuditLog[]
 }
 
-model CommunityMember {
-  id          String   @id @default(cuid())
+model WorkspaceMember {
+  id          String    @id @default(cuid())
   userId      String
-  communityId String
-  joinedAt    DateTime @default(now())
+  workspaceId String
+  role        String    @default("member") // owner | admin | member | guest
+  joinedAt    DateTime  @default(now())
+  lastSeenAt  DateTime?
+  nickname    String?
 
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  roles     Role[]
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, communityId])
+  @@unique([userId, workspaceId])
 }
 
-model Role {
-  id          String @id @default(cuid())
-  name        String
-  color       String @default("#0066ff")
-  communityId String
+model WorkspaceInvite {
+  id          String    @id @default(cuid())
+  code        String    @unique @default(cuid())
+  workspaceId String
+  createdBy   String
+  expiresAt   DateTime?
+  maxUses     Int?
+  uses        Int       @default(0)
+  createdAt   DateTime  @default(now())
 
-  community Community        @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  members   CommunityMember[]
-  permissions Permission[]
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 }
 
-model Permission {
-  id     String @id @default(cuid())
-  roleId String
-  name   String
-
-  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
-}
-
-model Channel {
+model WorkspaceIntegration {
   id          String   @id @default(cuid())
-  name        String
-  type        String   @default("text")
-  description String?
-  topic       String?
-  communityId String
-  isPrivate   Boolean  @default(false)
+  workspaceId String
+  type        String   // github | linear | figma | jira | notion
+  config      Json     @default("{}")
+  accessToken String?  @db.Text
+  metadata    Json     @default("{}")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  messages  Message[]
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([communityId])
+  @@unique([workspaceId, type])
+}
+
+model WorkspacePlugin {
+  id          String   @id @default(cuid())
+  workspaceId String
+  pluginId    String
+  enabled     Boolean  @default(true)
+  config      Json     @default("{}")
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, pluginId])
+}
+
+// ─── Channels & Messaging ────────────────────────────────────────────────────
+
+model Channel {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  topic       String?
+  type        String  @default("text") // text | announcement | forum | github-repo | dm | voice
+  workspaceId String
+  isPrivate   Boolean  @default(false)
+  isArchived  Boolean  @default(false)
+  isDm        Boolean  @default(false)
+  // For GitHub repo-linked channels
+  githubRepoName  String?
+  githubRepoOwner String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  messages  Message[]
+  pins      Pin[]
+  members   ChannelMember[]
+
+  @@index([workspaceId])
+}
+
+model ChannelMember {
+  id        String   @id @default(cuid())
+  channelId String
+  userId    String
+  joinedAt  DateTime @default(now())
+
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, userId])
 }
 
 model Message {
-  id        String   @id @default(cuid())
-  content   String
+  id        String    @id @default(cuid())
+  content   String    @db.Text
   userId    String
   channelId String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  parentId  String?   // thread parent
+  isEdited  Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  channel   Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  reactions Reaction[]
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel     Channel      @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  parent      Message?     @relation("replies", fields: [parentId], references: [id])
+  replies     Message[]    @relation("replies")
+  reactions   Reaction[]
   attachments Attachment[]
+  mentions    Mention[]
+  pins        Pin[]
 
   @@index([channelId])
   @@index([userId])
+  @@index([parentId])
 }
 
 model Reaction {
@@ -184,87 +244,211 @@ model Attachment {
   url       String
   filename  String
   size      Int
-  type      String
+  mimeType  String
   messageId String
   createdAt DateTime @default(now())
 
   message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
 }
 
-model Report {
+model Mention {
+  id        String   @id @default(cuid())
+  userId    String
+  messageId String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, messageId])
+}
+
+model Pin {
+  id        String   @id @default(cuid())
+  messageId String
+  channelId String
+  pinnedBy  String
+  createdAt DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, channelId])
+}
+
+// ─── Tasks & Project Management ─────────────────────────────────────────────
+
+model TaskBoard {
   id          String   @id @default(cuid())
-  reporterId  String
-  reason      String
+  name        String
   description String?
-  status      String   @default("open")
-  messageId   String?
-  userId      String?
-  communityId String?
+  workspaceId String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  reporter User @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  workspace Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  columns   TaskColumn[]
 }
 
-model ModerationAction {
-  id          String   @id @default(cuid())
-  moderatorId String
-  userId      String
-  communityId String
-  action      String
-  reason      String?
-  duration    Int?
-  createdAt   DateTime @default(now())
+model TaskColumn {
+  id        String   @id @default(cuid())
+  name      String
+  boardId   String
+  order     Int      @default(0)
+  color     String   @default("#6366f1")
+  createdAt DateTime @default(now())
 
-  moderator User @relation(fields: [moderatorId], references: [id], onDelete: Cascade)
+  board TaskBoard @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  tasks Task[]
+
+  @@index([boardId])
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  description String?   @db.Text
+  priority    String    @default("medium") // low | medium | high | urgent
+  columnId    String?
+  assigneeId  String?
+  creatorId   String
+  dueDate     DateTime?
+  completedAt DateTime?
+  order       Int       @default(0)
+  labels      String[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  column   TaskColumn?  @relation(fields: [columnId], references: [id])
+  assignee User?        @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  creator  User         @relation("TaskCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  comments TaskComment[]
+
+  @@index([columnId])
+  @@index([assigneeId])
+}
+
+model TaskComment {
+  id        String   @id @default(cuid())
+  taskId    String
+  userId    String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+}
+
+// ─── Roadmaps ────────────────────────────────────────────────────────────────
+
+model Roadmap {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  workspaceId String
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  workspace  Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  milestones Milestone[]
+}
+
+model Milestone {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  roadmapId   String
+  startDate   DateTime?
+  dueDate     DateTime?
+  status      String    @default("planned") // planned | in-progress | completed | delayed
+  color       String    @default("#6366f1")
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  roadmap Roadmap @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+
+  @@index([roadmapId])
+}
+
+// ─── AI Conversations ────────────────────────────────────────────────────────
+
+model AIConversation {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String?
+  model       String   @default("claude-sonnet-4-6")
+  context     String?  // workspaceId or channelId the AI has context for
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages AIMessage[]
 
   @@index([userId])
-  @@index([communityId])
 }
 
-model Ban {
-  id          String   @id @default(cuid())
-  userId      String
-  communityId String
-  reason      String?
-  createdAt   DateTime @default(now())
+model AIMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           String   // user | assistant
+  content        String   @db.Text
+  createdAt      DateTime @default(now())
 
-  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  conversation AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, communityId])
+  @@index([conversationId])
 }
 
-model Invite {
-  id          String   @id @default(cuid())
-  code        String   @unique
-  communityId String
-  createdAt   DateTime @default(now())
-  expiresAt   DateTime?
-  maxUses     Int?
-  uses        Int      @default(0)
+// ─── Notifications ───────────────────────────────────────────────────────────
 
-  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // mention | dm | task-assigned | task-due | github | system
+  title     String
+  body      String?
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
 }
+
+// ─── Audit Log ───────────────────────────────────────────────────────────────
 
 model AuditLog {
   id          String   @id @default(cuid())
-  communityId String
+  workspaceId String
+  userId      String?
   action      String
-  details     String?
+  details     Json?
   createdAt   DateTime @default(now())
 
-  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
 }
 
+// ─── User Settings ───────────────────────────────────────────────────────────
+
 model UserSettings {
-  id                    String  @id @default(cuid())
-  userId                String  @unique
-  theme                 String  @default("dark")
-  notifications         Boolean @default(true)
-  soundEnabled          Boolean @default(true)
-  compactMode           Boolean @default(false)
-  profanityFilterLevel  String  @default("medium") // off | low | medium | strict
-  profanityFilterAction String  @default("mask")   // allow | mask | warn | block
+  id              String  @id @default(cuid())
+  userId          String  @unique
+  theme           String  @default("glass-dark")
+  notifications   Boolean @default(true)
+  soundEnabled    Boolean @default(true)
+  compactMode     Boolean @default(false)
+  language        String  @default("en")
+  aiEnabled       Boolean @default(true)
+  desktopStartup  Boolean @default(false)
+  desktopTray     Boolean @default(true)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

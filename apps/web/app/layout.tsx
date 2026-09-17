@@ -1,15 +1,12 @@
 import type { Metadata } from "next";
-import { brand } from "@nexa/branding";
-import { Providers } from "./providers";
 import "./globals.css";
+import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: brand.name,
-  description: brand.tagline,
-  openGraph: {
-    title: brand.name,
-    description: brand.tagline,
-    url: brand.website,
+  title: "Vertex — Where Teams Build",
+  description: "The workplace collaboration platform for modern engineering teams. GitHub integration, real-time chat, tasks, roadmaps, and AI — all in one place.",
+  icons: {
+    icon: "/favicon.ico",
   },
 };
 
@@ -21,10 +18,19 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
       </head>
-      <body className="bg-white dark:bg-slate-950 text-slate-950 dark:text-white">
+      <body>
+        <div className="vertex-bg" aria-hidden>
+          <video autoPlay muted loop playsInline>
+            <source src="/glass.mp4" type="video/mp4" />
+          </video>
+        </div>
         <Providers>{children}</Providers>
       </body>
     </html>

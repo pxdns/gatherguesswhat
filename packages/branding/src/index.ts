@@ -1,1 +1,1 @@
-export * from "./brand";
+// @vertex/branding

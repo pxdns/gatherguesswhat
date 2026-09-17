@@ -1,5 +1,5 @@
 {
-  "name": "@nexa/marketing",
+  "name": "@vertex/marketing",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -12,8 +12,6 @@
     "next": "^14.0.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "@nexa/branding": "*",
-    "@nexa/theme": "*",
     "tailwindcss": "^3.4.1"
   },
   "devDependencies": {

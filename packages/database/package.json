@@ -1,5 +1,5 @@
 {
-  "name": "@nexa/database",
+  "name": "@vertex/database",
   "version": "0.1.0",
   "scripts": {
     "db:push": "prisma db push",

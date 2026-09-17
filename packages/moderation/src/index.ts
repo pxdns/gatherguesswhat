@@ -1,1 +1,1 @@
-export * from "./profanity-filter";
+// @vertex/moderation

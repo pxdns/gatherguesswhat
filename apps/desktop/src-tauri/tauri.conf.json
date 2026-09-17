@@ -1,17 +1,17 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Nexa",
+  "productName": "Vertex",
   "version": "0.1.0",
-  "identifier": "com.nexa.app",
+  "identifier": "com.vertex.app",
   "build": {
     "devUrl": "http://localhost:3000",
-    "frontendDist": "https://nexachat.vercel.app"
+    "frontendDist": "https://vertex-app.vercel.app"
   },
   "app": {
     "windows": [
       {
         "label": "main",
-        "title": "Nexa",
+        "title": "Vertex",
         "url": "/",
         "width": 1200,
         "height": 800,

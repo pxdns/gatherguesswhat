@@ -4,38 +4,65 @@ import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "./prisma";
 
-export const { auth, handlers, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma),
-  // Vercel terminates TLS at its edge and forwards over HTTP internally, so NextAuth's
-  // built-in host/protocol check on the incoming request needs to be told to trust it —
-  // without this, callback URLs can resolve wrong and the OAuth redirect silently fails.
+export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
+  adapter: PrismaAdapter(prisma),
   providers: [
     GitHub({
-      clientId: process.env.GITHUB_WEB_ID,
-      clientSecret: process.env.GITHUB_WEB_SECRET,
+      clientId: process.env.GITHUB_WEB_ID!,
+      clientSecret: process.env.GITHUB_WEB_SECRET!,
+      authorization: {
+        params: {
+          // read:org — see org memberships
+          // repo — see public+private repos
+          // read:user — full profile
+          // user:email — email addresses
+          scope: "read:user user:email read:org repo",
+        },
+      },
     }),
     Google({
-      clientId: process.env.GOOGLE_WEB_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_WEB_CLIENT_SECRET,
+      clientId: process.env.GOOGLE_WEB_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_WEB_CLIENT_SECRET!,
     }),
   ],
+  session: {
+    strategy: "database",
+  },
   callbacks: {
-    async session({ session, user }: any) {
+    async session({ session, user }) {
       if (session.user) {
         session.user.id = user.id;
+        // Pull GitHub username from Account table
+        const ghAccount = await prisma.account.findFirst({
+          where: { userId: user.id, provider: "github" },
+          select: { providerAccountId: true },
+        });
+        if (ghAccount) {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: user.id },
+            select: { githubUsername: true },
+          });
+          (session.user as any).githubUsername = dbUser?.githubUsername;
+        }
       }
       return session;
     },
-    async redirect({ url, baseUrl }) {
-      if (url.startsWith("/")) return `${baseUrl}${url}`;
-      if (new URL(url).origin === baseUrl) return url;
-      return baseUrl;
+    async signIn({ user, account, profile }) {
+      // Store GitHub username on the User row
+      if (account?.provider === "github" && profile) {
+        await prisma.user.update({
+          where: { id: user.id! },
+          data: {
+            githubUsername: (profile as any).login,
+            githubId: String((profile as any).id),
+          },
+        }).catch(() => null); // non-fatal if user row not yet created
+      }
+      return true;
     },
   },
   pages: {
-    signIn: "/auth/signin",
-    signOut: "/auth/signout",
-    error: "/auth/error",
+    signIn: "/signin",
   },
 });

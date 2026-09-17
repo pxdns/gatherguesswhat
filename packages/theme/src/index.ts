@@ -1,1 +1,1 @@
-export * from "./themes";
+// @vertex/theme

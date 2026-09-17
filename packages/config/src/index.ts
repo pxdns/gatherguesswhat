@@ -1,1 +1,1 @@
-export {};
+// @vertex/config
