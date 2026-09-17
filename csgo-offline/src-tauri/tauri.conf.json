@@ -3,7 +3,7 @@
     "beforeBuildCommand": "npm run build",
     "beforeDevCommand": "npm run dev",
     "devPath": "http://localhost:5173",
-    "frontendDist": "../dist"
+    "distDir": "../dist"
   },
   "package": {
     "productName": "CS Offline",
@@ -24,6 +24,13 @@
         "setFullscreen": true
       }
     },
+    "bundle": {
+      "active": true,
+      "targets": "all",
+      "identifier": "com.csoffline.app",
+      "icon": [],
+      "macOS": {}
+    },
     "windows": [
       {
         "fullscreen": false,
@@ -37,9 +44,6 @@
     ],
     "security": {
       "csp": null
-    },
-    "macOS": {
-      "privacyManifest": {}
     }
   }
 }
