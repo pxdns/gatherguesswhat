@@ -65,9 +65,8 @@ export async function POST(req: Request) {
       try {
         const claudeStream = anthropic.messages.stream({
           model: "claude-opus-5",
-          max_tokens: 4096,
+          max_tokens: 8000,
           thinking: { type: "adaptive" },
-          output_config: { effort: "high" },
           system: SYSTEM_PROMPT,
           messages: history,
         });
