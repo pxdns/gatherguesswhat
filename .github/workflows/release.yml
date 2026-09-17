@@ -1,9 +1,15 @@
-name: Release Nexa Desktop
+name: Release Vertex Desktop
 
 on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v0.2.0)"
+        required: true
+        default: "v0.2.0"
 
 jobs:
   build-macos:
@@ -51,7 +57,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: apps/desktop/src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -59,7 +65,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: apps/desktop/src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -96,7 +102,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -142,7 +148,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: apps/desktop/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -150,6 +156,6 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: apps/desktop/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/*.deb
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
