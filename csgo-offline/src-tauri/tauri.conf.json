@@ -1,0 +1,45 @@
+{
+  "build": {
+    "beforeBuildCommand": "npm run build",
+    "beforeDevCommand": "npm run dev",
+    "devPath": "http://localhost:5173",
+    "frontendDist": "../dist"
+  },
+  "package": {
+    "productName": "CS Offline",
+    "version": "1.0.0"
+  },
+  "tauri": {
+    "allowlist": {
+      "all": false,
+      "window": {
+        "all": false,
+        "close": true,
+        "hide": true,
+        "show": true,
+        "maximize": true,
+        "minimize": true,
+        "unmaximize": true,
+        "unminimize": true,
+        "setFullscreen": true
+      }
+    },
+    "windows": [
+      {
+        "fullscreen": false,
+        "height": 900,
+        "resizable": true,
+        "title": "CS Offline - Counter-Strike Practice Arena",
+        "width": 1440,
+        "minHeight": 600,
+        "minWidth": 800
+      }
+    ],
+    "security": {
+      "csp": null
+    },
+    "macOS": {
+      "privacyManifest": {}
+    }
+  }
+}
