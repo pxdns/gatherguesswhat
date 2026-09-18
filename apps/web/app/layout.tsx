@@ -3,8 +3,8 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "Vertex — Where Teams Build",
-  description: "The workplace collaboration platform for modern engineering teams. GitHub integration, real-time chat, tasks, roadmaps, and AI — all in one place.",
+  title: "pxdns — projects",
+  description: "Vertex, CS Offline, and more — open source projects by pxdns.",
   icons: {
     icon: "/favicon.ico",
   },
