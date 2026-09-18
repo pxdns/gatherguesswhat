@@ -1,0 +1,37 @@
+{
+  "name": "cs-offline-practice",
+  "version": "1.0.0",
+  "description": "Offline Counter-Strike Practice Arena with Bot AI",
+  "type": "module",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "serve": "npx http-server . -p 8080",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "tauri:build:mac": "tauri build --target universal-apple-darwin"
+  },
+  "keywords": [
+    "counter-strike",
+    "cs2",
+    "practice",
+    "offline",
+    "bot",
+    "aim-trainer"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@tauri-apps/cli": "^1.5.0",
+    "@tauri-apps/api": "^1.5.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.7"
+  },
+  "dependencies": {
+    "three": "^0.170.0"
+  }
+}

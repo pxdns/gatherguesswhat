@@ -8,12 +8,13 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        nexa: {
-          50: "#f0f4ff",
-          100: "#e0e9ff",
-          500: "#0066ff",
-          600: "#0052cc",
-          700: "#003d99",
+        vertex: {
+          50: "#eef2ff",
+          100: "#e0e7ff",
+          400: "#818cf8",
+          500: "#6366f1",
+          600: "#4f46e5",
+          700: "#4338ca",
         },
       },
       backdropBlur: {

@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Counter-Strike Offline - Practice Arena</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #1a1a1a;
+      color: #fff;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    .game-shell {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .game-canvas {
+      flex: 1;
+      position: relative;
+    }
+
+    .game-hud {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      z-index: 100;
+    }
+
+    .hud-dim .hud-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0));
+    }
+
+    .hud-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .hud-brand svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .hud-brand span {
+      font-size: 10px;
+      opacity: 0.7;
+      margin-left: 10px;
+    }
+
+    .hud-timer {
+      font-size: 20px;
+      font-weight: bold;
+      letter-spacing: 2px;
+    }
+
+    .hud-performance {
+      font-size: 11px;
+      opacity: 0.8;
+    }
+
+    .hud-performance span {
+      margin-left: 15px;
+      opacity: 0.5;
+    }
+
+    .session-score {
+      position: absolute;
+      top: 80px;
+      left: 20px;
+      display: flex;
+      gap: 40px;
+      font-size: 13px;
+    }
+
+    .session-score div {
+      text-align: center;
+    }
+
+    .session-score b {
+      display: block;
+      font-size: 24px;
+      margin-bottom: 4px;
+    }
+
+    .session-score small {
+      display: block;
+      font-size: 9px;
+      opacity: 0.7;
+      letter-spacing: 1px;
+    }
+
+    .killfeed {
+      position: absolute;
+      top: 80px;
+      right: 20px;
+      max-width: 300px;
+      font-size: 12px;
+    }
+
+    .killfeed-entry {
+      padding: 4px 8px;
+      margin-bottom: 2px;
+      background: rgba(0,0,0,0.3);
+      border-left: 2px solid #4a9eff;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .crosshair {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 20px;
+      height: 20px;
+      pointer-events: none;
+    }
+
+    .scope-mask {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+      background: radial-gradient(circle at center, transparent 15%, rgba(0,0,0,0.8) 15%);
+    }
+
+    .scope-reticle {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 20px;
+      height: 20px;
+      border: 1px solid #00ff00;
+      border-radius: 50%;
+    }
+
+    .scope-h, .scope-v {
+      position: absolute;
+      background: #00ff00;
+    }
+
+    .scope-h {
+      width: 60px;
+      height: 1px;
+      top: 9px;
+      left: -30px;
+    }
+
+    .scope-v {
+      width: 1px;
+      height: 60px;
+      left: 9px;
+      top: -30px;
+    }
+
+    .hud-bottom {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      display: flex;
+      gap: 40px;
+      font-size: 12px;
+    }
+
+    .health-block {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .health-block b {
+      font-size: 16px;
+    }
+
+    .health-block small {
+      font-size: 9px;
+      opacity: 0.7;
+    }
+
+    .health-block span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+    }
+
+    .health-bar {
+      width: 100px;
+      height: 8px;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid #666;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .health-bar i {
+      display: block;
+      height: 100%;
+      background: linear-gradient(to right, #00ff00, #ffff00, #ff4444);
+      width: 100%;
+      transition: width 0.2s;
+    }
+
+    .ammo-block {
+      text-align: right;
+    }
+
+    .ammo-block div {
+      font-size: 16px;
+    }
+
+    .ammo-block b {
+      font-size: 18px;
+      margin-right: 4px;
+    }
+
+    .ammo-block small {
+      font-size: 12px;
+      opacity: 0.7;
+      margin-right: 4px;
+    }
+
+    .game-menu {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+      pointer-events: auto;
+      z-index: 200;
+    }
+
+    .game-menu[aria-hidden="true"] {
+      display: none;
+      pointer-events: none;
+    }
+
+    .game-menu-card {
+      background: rgba(20,20,20,0.95);
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 40px;
+      max-width: 600px;
+      text-align: center;
+    }
+
+    .eyebrow {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 2px;
+      opacity: 0.6;
+      margin-bottom: 15px;
+      text-transform: uppercase;
+    }
+
+    .game-menu-card h1 {
+      font-size: 36px;
+      margin-bottom: 15px;
+      font-weight: 300;
+      letter-spacing: 2px;
+    }
+
+    .game-menu-card p {
+      opacity: 0.7;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .quick-sensitivity {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      margin-bottom: 25px;
+      justify-content: center;
+    }
+
+    .quick-sensitivity label {
+      font-size: 12px;
+      opacity: 0.7;
+    }
+
+    .quick-sensitivity input {
+      width: 60px;
+      padding: 6px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid #555;
+      border-radius: 4px;
+      color: #fff;
+      text-align: center;
+    }
+
+    .quick-sensitivity span {
+      font-size: 11px;
+      opacity: 0.5;
+    }
+
+    .volume-control {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      margin-bottom: 30px;
+      justify-content: center;
+    }
+
+    .primary-action {
+      background: #4a9eff;
+      color: #000;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .primary-action:hover {
+      background: #5aafff;
+    }
+
+    .secondary-action {
+      background: transparent;
+      color: #fff;
+      border: 1px solid #555;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: border-color 0.2s;
+      margin: 10px 5px;
+    }
+
+    .secondary-action:hover {
+      border-color: #888;
+    }
+
+    .menu-secondary,
+    .menu-controls {
+      margin-top: 25px;
+      text-align: left;
+    }
+
+    .menu-secondary {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .menu-controls {
+      background: rgba(0,0,0,0.3);
+      padding: 15px;
+      border-radius: 4px;
+      font-size: 11px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .menu-controls span {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .menu-controls kbd {
+      background: rgba(255,255,255,0.1);
+      padding: 2px 6px;
+      border-radius: 2px;
+      font-family: monospace;
+      font-size: 10px;
+    }
+
+    .menu-fidelity {
+      margin-top: 20px;
+      font-size: 10px;
+      opacity: 0.5;
+    }
+
+    .main-menu {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, #0f0f1e 0%, #1a1a3f 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 300;
+    }
+
+    .main-menu-card {
+      text-align: center;
+      max-width: 800px;
+    }
+
+    .main-menu h1 {
+      font-size: 48px;
+      margin-bottom: 10px;
+      font-weight: 300;
+      letter-spacing: 4px;
+    }
+
+    .main-menu p {
+      opacity: 0.7;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .main-tabs {
+      display: flex;
+      gap: 0;
+      justify-content: center;
+      margin-bottom: 30px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .main-tab {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.5);
+      padding: 10px 28px;
+      cursor: pointer;
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: all 0.2s;
+    }
+
+    .main-tab.active {
+      color: #4a9eff;
+      border-bottom-color: #4a9eff;
+    }
+
+    .main-tab:hover {
+      color: rgba(255,255,255,0.8);
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-bottom: 30px;
+      text-align: left;
+    }
+
+    .project-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px;
+      padding: 20px;
+      transition: all 0.2s;
+      cursor: default;
+    }
+
+    .project-card:hover {
+      background: rgba(74,158,255,0.08);
+      border-color: rgba(74,158,255,0.35);
+      transform: translateY(-2px);
+    }
+
+    .project-card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .project-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .project-icon.vertex {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    }
+
+    .project-icon.csgo {
+      background: linear-gradient(135deg, #ff6400, #ff8c00);
+    }
+
+    .project-card h3 {
+      font-size: 14px;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .project-card .project-tag {
+      display: inline-block;
+      font-size: 9px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      background: rgba(74,158,255,0.15);
+      color: #4a9eff;
+      padding: 2px 7px;
+      border-radius: 3px;
+      margin-top: 2px;
+    }
+
+    .project-card p {
+      font-size: 12px;
+      opacity: 0.65;
+      margin: 8px 0 12px;
+      line-height: 1.5;
+    }
+
+    .project-tech {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .project-tech span {
+      font-size: 9px;
+      letter-spacing: 0.5px;
+      background: rgba(255,255,255,0.08);
+      padding: 3px 7px;
+      border-radius: 3px;
+      opacity: 0.8;
+    }
+
+    .project-links {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .project-link {
+      font-size: 10px;
+      color: #4a9eff;
+      text-decoration: none;
+      opacity: 0.8;
+      transition: opacity 0.15s;
+    }
+
+    .project-link:hover {
+      opacity: 1;
+    }
+
+    .gamemode-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .gamemode-button {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid #4a9eff;
+      color: #fff;
+      padding: 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .gamemode-button:hover {
+      background: rgba(74,158,255,0.2);
+      transform: translateY(-2px);
+    }
+
+    .gamemode-button small {
+      display: block;
+      font-size: 11px;
+      opacity: 0.6;
+      margin-top: 8px;
+    }
+
+    .difficulty-selector {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .difficulty-btn {
+      padding: 8px 16px;
+      border: 1px solid #555;
+      background: transparent;
+      color: #fff;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.2s;
+    }
+
+    .difficulty-btn.active {
+      background: #4a9eff;
+      border-color: #4a9eff;
+      color: #000;
+    }
+
+    .difficulty-btn:hover {
+      border-color: #4a9eff;
+    }
+
+    .play-btn {
+      background: #4a9eff;
+      color: #000;
+      border: none;
+      padding: 12px 40px;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .play-btn:hover {
+      background: #5aafff;
+    }
+  </style>
+</head>
+<body>
+  <div class="main-menu" id="mainMenu">
+    <div class="main-menu-card">
+      <h1>COUNTER-STRIKE OFFLINE</h1>
+      <p>Local Practice Arena - No Internet Required</p>
+
+      <div class="main-tabs">
+        <button class="main-tab active" data-tab="play">Play</button>
+        <button class="main-tab" data-tab="projects">Projects</button>
+      </div>
+
+      <div class="tab-panel active" id="tab-play">
+        <h3 style="margin-bottom: 15px; opacity: 0.8;">Select Difficulty</h3>
+        <div class="difficulty-selector">
+          <button class="difficulty-btn active" data-difficulty="easy">Easy</button>
+          <button class="difficulty-btn" data-difficulty="medium">Medium</button>
+          <button class="difficulty-btn" data-difficulty="hard">Hard</button>
+          <button class="difficulty-btn" data-difficulty="expert">Expert</button>
+        </div>
+
+        <h3 style="margin-bottom: 15px; opacity: 0.8; margin-top: 30px;">Select Game Mode</h3>
+        <div class="gamemode-grid" id="gamemodeGrid"></div>
+
+        <button class="play-btn" id="playBtn">START GAME</button>
+      </div>
+
+      <div class="tab-panel" id="tab-projects">
+        <div class="projects-grid">
+          <div class="project-card">
+            <div class="project-card-header">
+              <div class="project-icon vertex">⚡</div>
+              <div>
+                <h3>Vertex</h3>
+                <span class="project-tag">Web App</span>
+              </div>
+            </div>
+            <p>Workspace collaboration platform with real-time messaging, GitHub integration, and Claude AI assistant with extended thinking.</p>
+            <div class="project-tech">
+              <span>Next.js 14</span>
+              <span>TypeScript</span>
+              <span>Tailwind</span>
+              <span>Prisma</span>
+              <span>Supabase</span>
+              <span>Claude AI</span>
+            </div>
+            <div class="project-links">
+              <a class="project-link" href="https://github.com/pxdns/gatherguesswhat" target="_blank">GitHub →</a>
+            </div>
+          </div>
+          <div class="project-card">
+            <div class="project-card-header">
+              <div class="project-icon csgo">🎯</div>
+              <div>
+                <h3>CS Offline</h3>
+                <span class="project-tag">Desktop App · You are here</span>
+              </div>
+            </div>
+            <p>Offline Counter-Strike practice arena with bot AI, realistic weapon physics, and multiple game modes. Runs locally via Tauri.</p>
+            <div class="project-tech">
+              <span>Tauri v1</span>
+              <span>Three.js</span>
+              <span>TypeScript</span>
+              <span>Vite</span>
+              <span>Rust</span>
+            </div>
+            <div class="project-links">
+              <a class="project-link" href="https://github.com/pxdns/gatherguesswhat/tree/csgo-offline" target="_blank">GitHub →</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="game-shell" id="gameShell" style="display: none;">
+    <div class="game-canvas">
+      <canvas id="gameCanvas"></canvas>
+    </div>
+    <div class="game-hud hud-dim" id="gameHUD">
+      <div class="hud-top">
+        <div class="hud-brand">
+          <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
+            <path fill="currentColor" d="M23 5H11L4 12v8l7 7h12v-5H13l-4-4v-4l4-4h10Z M20 12l7 4-7 4v-2h-6v-4h6Z"></path>
+          </svg>
+          <b>CS Offline</b>
+          <span id="mapName">DUST II / FREE-FOR-ALL</span>
+        </div>
+        <div class="hud-timer" id="timer">3:39</div>
+        <div class="hud-performance">60 FPS <span>ESC / MENU</span></div>
+      </div>
+      <div class="session-score">
+        <div><b>0</b><small>KILLS</small></div>
+        <div><b>0<i>%</i></b><small>ACCURACY</small></div>
+        <div><b>0</b><small>HEADSHOTS</small></div>
+      </div>
+      <div class="killfeed" id="killfeed"></div>
+      <div class="scope-mask" id="scopeMask">
+        <div class="scope-reticle">
+          <div class="scope-h"></div>
+          <div class="scope-v"></div>
+        </div>
+      </div>
+      <div class="crosshair" id="crosshair">
+        <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+          <line x1="10" y1="0" x2="10" y2="4" stroke="#00ff00" stroke-width="1"/>
+          <line x1="10" y1="16" x2="10" y2="20" stroke="#00ff00" stroke-width="1"/>
+          <line x1="0" y1="10" x2="4" y2="10" stroke="#00ff00" stroke-width="1"/>
+          <line x1="16" y1="10" x2="20" y2="10" stroke="#00ff00" stroke-width="1"/>
+        </svg>
+      </div>
+      <div class="hud-bottom">
+        <div class="health-block">
+          <b>100<small>HP</small></b>
+          <span>🛡️ 100</span>
+          <div class="health-bar"><i style="width: 100%;"></i></div>
+        </div>
+        <div class="ammo-block">
+          <div><b>30</b><small>/ ∞</small></div>
+        </div>
+      </div>
+    </div>
+
+    <section class="game-menu" id="pauseMenu" aria-label="Game menu">
+      <div class="game-menu-card">
+        <span class="eyebrow">TAKE A BREATH</span>
+        <h1>Paused.</h1>
+        <p>Counter-Strike, on the web.</p>
+        <div class="quick-sensitivity">
+          <label for="quick-sens">CS sensitivity</label>
+          <input id="quick-sens" min="0.05" max="10" step="0.05" type="number" value="1">
+          <span>✓ Raw input enabled</span>
+        </div>
+        <button class="primary-action" id="resumeBtn">RESUME SESSION →</button>
+        <div class="menu-secondary">
+          <button class="secondary-action" id="restartBtn">↺ RESTART</button>
+          <button class="secondary-action" id="homeBtn">← Back to Home</button>
+        </div>
+        <div class="menu-controls">
+          <span><kbd>W A S D</kbd> Move</span>
+          <span><kbd>SPACE</kbd> Jump</span>
+          <span><kbd>SHIFT</kbd> Sprint</span>
+          <span><kbd>CTRL / C</kbd> Crouch</span>
+          <span><kbd>R</kbd> Reload</span>
+          <span><kbd>RMB</kbd> Scope / Melee</span>
+          <span><kbd>1 / 2 / 3</kbd> Weapon Select</span>
+          <span><kbd>Q</kbd> Last Weapon</span>
+          <span><kbd>F</kbd> Inspect</span>
+          <span><kbd>ESC</kbd> Menu</span>
+          <span><kbd>SCROLL</kbd> Weapon Switch</span>
+          <span><kbd>MOUSE</kbd> Look Around</span>
+        </div>
+        <p class="menu-fidelity">Weapon values use published CS2 data. Physics and mechanics are reconstructed.</p>
+      </div>
+    </section>
+  </div>
+
+  <script type="module">
+    // Import game modules (will need bundling for production)
+    import { Game } from './src/game.ts';
+    import { GameModeManager, GAMEMODES } from './src/gamemodes.ts';
+
+    let currentGame = null;
+    let selectedGamemode = 'freeForAll';
+    let selectedDifficulty = 'easy';
+
+    // Populate gamemode grid
+    const gamemodeGrid = document.getElementById('gamemodeGrid');
+    Object.entries(GAMEMODES).forEach(([key, mode]) => {
+      const btn = document.createElement('button');
+      btn.className = 'gamemode-button';
+      btn.innerHTML = `${mode.name}<small>${mode.botCount} bots • ${Math.floor(mode.roundTime / 60)}m</small>`;
+      btn.onclick = () => {
+        document.querySelectorAll('.gamemode-button').forEach(b => b.style.opacity = '0.6');
+        btn.style.opacity = '1';
+        selectedGamemode = key;
+      };
+      if (key === 'freeForAll') btn.style.opacity = '1';
+      else btn.style.opacity = '0.6';
+      gamemodeGrid.appendChild(btn);
+    });
+
+    // Difficulty buttons
+    document.querySelectorAll('.difficulty-btn').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedDifficulty = btn.dataset.difficulty;
+      };
+    });
+
+    // Play button
+    document.getElementById('playBtn').onclick = () => {
+      const gamemode = GAMEMODES[selectedGamemode];
+      if (!gamemode) return;
+
+      document.getElementById('mainMenu').style.display = 'none';
+      document.getElementById('gameShell').style.display = 'flex';
+      document.getElementById('mapName').textContent = `DUST II / ${gamemode.name.toUpperCase()}`;
+
+      currentGame = new Game(
+        document.getElementById('gameCanvas'),
+        gamemode,
+        selectedDifficulty
+      );
+    };
+
+    // Pause menu controls
+    document.getElementById('resumeBtn').onclick = () => {
+      if (currentGame) currentGame.resume();
+      document.getElementById('pauseMenu').setAttribute('aria-hidden', 'true');
+    };
+
+    document.getElementById('restartBtn').onclick = () => {
+      if (currentGame) currentGame.restart();
+      document.getElementById('pauseMenu').setAttribute('aria-hidden', 'true');
+    };
+
+    document.getElementById('homeBtn').onclick = () => {
+      if (currentGame) currentGame.dispose();
+      currentGame = null;
+      document.getElementById('gameShell').style.display = 'none';
+      document.getElementById('mainMenu').style.display = 'flex';
+      document.getElementById('pauseMenu').setAttribute('aria-hidden', 'true');
+    };
+
+    // ESC to pause
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && currentGame) {
+        const menu = document.getElementById('pauseMenu');
+        if (menu.getAttribute('aria-hidden') === 'true') {
+          menu.setAttribute('aria-hidden', 'false');
+          currentGame.pause();
+        } else {
+          menu.setAttribute('aria-hidden', 'true');
+          currentGame.resume();
+        }
+      }
+    });
+
+    // Sensitivity slider
+    document.getElementById('quick-sens').addEventListener('change', (e) => {
+      if (currentGame) {
+        currentGame.player?.setSensitivity(parseFloat(e.target.value));
+      }
+    });
+
+    // Tab switching
+    document.querySelectorAll('.main-tab').forEach(tab => {
+      tab.onclick = () => {
+        document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+      };
+    });
+  </script>
+</body>
+</html>
